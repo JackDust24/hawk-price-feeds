@@ -9,11 +9,25 @@ const pusher = new Pusher({
   useTLS: true,
 });
 
-const triggerPriceUpdate = (channel, event, data) => {
+const triggerPriceUpdate = (symbol, event, price) => {
+  let channel;
+
+  if (symbol === 'AAPL') {
+    channel = 'prices-channel-aapl';
+  } else if (symbol === 'GOOGL') {
+    channel = 'prices-channel-googl';
+  }
+
+  const priceData = {
+    symbol,
+    price,
+    timestamp: new Date().toISOString(),
+  };
+
   pusher
-    .trigger(channel, event, data)
+    .trigger(channel, event, priceData)
     .then(() => {
-      console.log(`Price update triggered for channel ${channel}:`, data);
+      console.log(`Price update triggered for channel ${channel}:`, priceData);
     })
     .catch((err) => {
       console.error('Error triggering Pusher event:', err);

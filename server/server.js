@@ -3,8 +3,11 @@ const cors = require('cors');
 
 const express = require('express');
 const bodyParser = require('body-parser');
-const { triggerPriceUpdate } = require('./src/service/pusher');
+const prices = require('./src/routes/prices');
 const app = express();
+const { startConsumer } = require('./src/service/kafka');
+const { kafkaInit } = require('./src/service/kafkaClient');
+
 const FRONTEND_URL = process.env.FRONTEND_URL ?? 'http://localhost:3000';
 
 app.use(
@@ -15,17 +18,16 @@ app.use(
 );
 app.use(bodyParser.json());
 
-app.post('/api/price-update', (req, res) => {
-  console.log('Received price update request:', req.body);
-  const { channel, event, priceData } = req.body;
+app.use('/api', prices);
 
-  triggerPriceUpdate(channel, event, priceData);
-
-  res.status(200).send('Price update broadcasted');
-});
+const init = async () => {
+  await kafkaInit();
+  await startConsumer('prices-consumer', 'stock-prices');
+};
 
 const PORT = process.env.PORT || 8080;
 
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
+  init();
 });
