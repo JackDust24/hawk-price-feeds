@@ -1,5 +1,5 @@
 const { Kafka, Partitioners, logLevel } = require('kafkajs');
-const ip = require('ip');
+// const ip = require('ip');
 
 const HOST = process.env.HOST_IP || 'localhost';
 

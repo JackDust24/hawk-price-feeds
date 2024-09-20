@@ -1,13 +1,10 @@
 const { Kafka, Partitioners, logLevel } = require('kafkajs');
-const ip = require('ip');
-const { triggerPriceUpdate } = require('./pusher');
 const { kafkaClient } = require('./kafkaClient');
 
 const producer = kafkaClient.producer({
   createPartitioner: Partitioners.LegacyPartitioner,
 });
 
-// const HOST = process.env.HOST_IP || ip.address();
 const sendToKafka = async (symbol, price) => {
   let partition;
 
