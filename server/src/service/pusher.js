@@ -9,13 +9,13 @@ const pusher = new Pusher({
   useTLS: true,
 });
 
-const triggerPriceUpdate = (symbol, event, priceData) => {
-  let channel;
+const triggerPriceUpdate = (symbols, symbol, event, priceData) => {
+  let channel = 'prices-channel';
 
-  if (symbol === 'AAPL') {
-    channel = 'prices-channel-aapl';
-  } else if (symbol === 'GOOGL') {
-    channel = 'prices-channel-googl';
+  if (symbol === symbols.aSymbol) {
+    channel = 'prices-channel-aSymbol';
+  } else if (symbol === symbols.bSymbol) {
+    channel = 'prices-channel-bSymbol';
   }
 
   const priceInfo = {

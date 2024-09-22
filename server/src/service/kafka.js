@@ -5,14 +5,17 @@ const producer = kafkaClient.producer({
   createPartitioner: Partitioners.LegacyPartitioner,
 });
 
-const sendToKafka = async (symbol, price) => {
-  let partition;
+//TODO: Redo this as no longer specific symbols
+const sendToKafka = async (symbols, symbol, price) => {
+  let partition = 0;
 
-  if (symbol === 'AAPL') {
+  if (symbol === symbols.aSymbol) {
     partition = 0;
-  } else if (symbol === 'GOOGL') {
+  } else if (symbol === symbols.bSymbol) {
     partition = 1;
   }
+
+  console.log('*** sendToKafka', symbols, symbol, price, partition);
 
   try {
     await producer.connect();
@@ -59,9 +62,9 @@ async function startConsumer(groupId, topics) {
           //TODO: We will use Kaflka to log this into a database or something
           const priceData = JSON.parse(message.value);
           if (partition === 0) {
-            console.log('Received AAPL price update:', priceData);
+            console.log('Received price update:', priceData);
           } else if (partition === 1) {
-            console.log('Received GOOGL price update:', priceData);
+            console.log('Received price update:', priceData);
           }
         } catch (err) {
           console.error('Error processing Kafka message:', err);

@@ -6,19 +6,37 @@ const { sendToKafka } = require('../service/kafka');
 
 router.post('/price-update', async (req, res) => {
   const { event, priceData } = req.body;
-  console.log('request', priceData);
+  console.log('*** request >', event, priceData);
 
   let latestPrices = [];
+  let symbols = {};
 
   try {
     if (!priceData || !event || !priceData.symbols) {
       throw new Error('Invalid request body');
     }
-    latestPrices = await Promise.all(
+    symbols = {
+      aSymbol: priceData.symbols[0],
+      bSymbol: priceData.symbols[1],
+    };
+
+    const response = (latestPrices = await Promise.all(
       priceData.symbols.map(async (symbol) => {
-        return { symbol: symbol, data: await fetchCryptoPrice(symbol) };
+        try {
+          const data = await fetchCryptoPrice(symbol, priceData);
+          console.log('*** data', data);
+          return {
+            symbol: symbol,
+            data: data,
+          };
+        } catch (error) {
+          console.error('**** Error fetching price:', error);
+          res.status(429).send('Invalid request');
+          return;
+        }
       })
-    );
+    ));
+    console.log('**** response from call', response);
   } catch (error) {
     console.error('Error validating request body:', error);
     res.status(400).send('Invalid request body');
@@ -26,14 +44,28 @@ router.post('/price-update', async (req, res) => {
   }
 
   const filteredPrices = latestPrices.filter((stock) => Boolean(stock.data));
-  console.log('filteredPrices', filteredPrices);
+  if (filteredPrices.length === 0) {
+    res.status(500).send('Error fetching prices');
+    return;
+  }
+  console.log('*** filteredPrices', symbols, filteredPrices);
 
   filteredPrices.forEach((updatedPriceData, index) => {
-    sendToKafka(updatedPriceData.symbol, updatedPriceData);
-    triggerPriceUpdate(updatedPriceData.symbol, event, updatedPriceData.data);
+    sendToKafka(symbols, updatedPriceData.symbol[index], updatedPriceData);
+    triggerPriceUpdate(
+      symbols,
+      updatedPriceData.symbol,
+      event,
+      updatedPriceData.data
+    );
   });
 
-  res.status(200).send('Price update broadcasted');
+  console.log('filteredPrices', filteredPrices);
+
+  res.status(200).send({
+    message: 'Price update broadcasted',
+    status: 'success',
+  });
 });
 
 module.exports = router;
